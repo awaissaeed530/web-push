@@ -11,27 +11,24 @@ export class AppElement extends HTMLElement {
   }
 
   async initialize() {
-    const serviceWorker = await this.registerServiceWorker();
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       console.info('Notification permission granted');
     }
-    const subscription = await this.subscribe(serviceWorker);
-    console.log(subscription);
 
-    await this.saveSubscription(subscription);
-  }
-
-  private async registerServiceWorker(): Promise<ServiceWorkerRegistration> {
-    try {
-      const registration = await navigator.serviceWorker.register(
-        '/service-worker.js',
-        { type: 'module' }
+    let serviceWorker = await navigator.serviceWorker.getRegistration(
+      '/service-worker.js'
+    );
+    if (!serviceWorker) {
+      serviceWorker = await navigator.serviceWorker.register(
+        '/service-worker.js'
       );
-      console.info('Service worker successfully registered.');
-      return registration;
-    } catch (err) {
-      throw new Error('Unable to register service worker.', { cause: err });
+      console.info('Service worker successfully registered');
+
+      const subscription = await this.subscribe(serviceWorker);
+      console.log(subscription);
+
+      await this.saveSubscription(subscription);
     }
   }
 
@@ -79,13 +76,13 @@ export class AppElement extends HTMLElement {
       body: JSON.stringify({
         body: 'This is a web push notification',
         icon: 'https://dashboard.dev.kadicon.de/assets/images/logo.jpg',
-        image: 'https://dashboard.dev.kadicon.de/assets/images/logo.jpg',
-        badge: 'https://dashboard.dev.kadicon.de/assets/images/logo.jpg',
-        actions: [{
-          action: 'acknowledge-action',
-          type: 'button',
-          title: 'Acknowledge',
-        }],
+        actions: [
+          {
+            action: 'acknowledge-action',
+            type: 'button',
+            title: 'Acknowledge',
+          },
+        ],
       }),
       method: 'POST',
       headers: {
